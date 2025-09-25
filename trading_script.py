@@ -197,9 +197,10 @@ def trading_day_window(target: datetime | None = None) -> tuple[pd.Timestamp, pd
 
 # Known Stooq symbol remaps for common indices
 STOOQ_MAP = {
-    "^GSPC": "^SPX",  # S&P 500
-    "^DJI": "^DJI",   # Dow Jones
-    "^IXIC": "^IXIC", # Nasdaq Composite
+    "^JKSE": "^JKSE"
+    # ,  # S&P 500
+    # "^DJI": "^DJI",   # Dow Jones
+    # "^IXIC": "^IXIC", # Nasdaq Composite
     # "^RUT": not on Stooq; keep Yahoo
 }
 
@@ -362,7 +363,7 @@ def download_price_data(ticker: str, **kwargs: Any) -> FetchResult:
       1) Yahoo Finance via yfinance
       2) Stooq via pandas-datareader
       3) Stooq direct CSV
-      4) Index proxies (e.g., ^GSPC->SPY, ^RUT->IWM) via Yahoo
+      4) Index proxies (e.g., ^JKSE->SPY, ^RUT->IWM) via Yahoo
     Returns a DataFrame with columns [Open, High, Low, Close, Adj Close, Volume].
     """
     # Pull out range args, compute a weekend-safe window
@@ -390,7 +391,7 @@ def download_price_data(ticker: str, **kwargs: Any) -> FetchResult:
         return FetchResult(_normalize_ohlcv(_to_datetime_index(df_csv)), "stooq-csv")
 
     # ---------- 4) Proxy indices if applicable ----------
-    proxy_map = {"^GSPC": "SPY", "^RUT": "IWM"}
+    proxy_map = {"^JKSE": "SPY", "^RUT": "IWM"}
     proxy = proxy_map.get(ticker)
     if proxy:
         df_proxy = _yahoo_download(proxy, start=s, end=e, **kwargs)
@@ -540,7 +541,7 @@ Would you like to log a manual trade? Enter 'b' for buy, 's' for sell, or press 
                         portfolio_df.at[idx, "stop_loss"] = float(stop_loss)
 
                     cash -= notional
-                    print(f"Manual BUY MOO for {ticker} filled at ${exec_price:.2f} ({fetch.source}).")
+                    print(f"Manual BUY MOO for {ticker} filled at Rp{exec_price:.2f} ({fetch.source}).")
                     continue
 
                 elif order_type == "l":
@@ -716,7 +717,7 @@ def log_manual_buy(
 
     if interactive:
         check = input(
-            f"You are placing a BUY LIMIT for {shares} {ticker} at ${buy_price:.2f}.\n"
+            f"You are placing a BUY LIMIT for {shares} {ticker} at Rp {buy_price:.2f}.\n"
             f"If this is a mistake, type '1' or, just hit Enter: "
         )
         if check == "1":
@@ -746,7 +747,7 @@ def log_manual_buy(
     elif l <= buy_price:
         exec_price = buy_price
     else:
-        print(f"Buy limit ${buy_price:.2f} for {ticker} not reached today (range {l:.2f}-{h:.2f}). Order not filled.")
+        print(f"Buy limit Rp {buy_price:.2f} for {ticker} not reached today (range {l:.2f}-{h:.2f}). Order not filled.")
         return cash, chatgpt_portfolio
 
     cost_amt = exec_price * shares
@@ -810,7 +811,7 @@ def log_manual_buy(
         chatgpt_portfolio.at[idx, "stop_loss"] = float(stoploss)
 
     cash -= cost_amt
-    print(f"Manual BUY LIMIT for {ticker} filled at ${exec_price:.2f} ({fetch.source}).")
+    print(f"Manual BUY LIMIT for {ticker} filled at Rp {exec_price:.2f} ({fetch.source}).")
     return cash, chatgpt_portfolio
 
 def log_manual_sell(
@@ -825,7 +826,7 @@ def log_manual_sell(
     today = check_weekend()
     if interactive:
         reason = input(
-            f"""You are placing a SELL LIMIT for {shares_sold} {ticker} at ${sell_price:.2f}.
+            f"""You are placing a SELL LIMIT for {shares_sold} {ticker} at Rp {sell_price:.2f}.
 If this is a mistake, enter 1, or hit Enter."""
         )
     if reason == "1":
@@ -862,7 +863,7 @@ If this is a mistake, enter 1, or hit Enter."""
     elif h >= sell_price:
         exec_price = sell_price
     else:
-        print(f"Sell limit ${sell_price:.2f} for {ticker} not reached today (range {l:.2f}-{h:.2f}). Order not filled.")
+        print(f"Sell limit Rp {sell_price:.2f} for {ticker} not reached today (range {l:.2f}-{h:.2f}). Order not filled.")
         return cash, chatgpt_portfolio
 
     buy_price = float(ticker_row["buy_price"].item())
@@ -901,7 +902,7 @@ If this is a mistake, enter 1, or hit Enter."""
         )
 
     cash += shares_sold * exec_price
-    print(f"Manual SELL LIMIT for {ticker} filled at ${exec_price:.2f} ({fetch.source}).")
+    print(f"Manual SELL LIMIT for {ticker} filled at Rp {exec_price:.2f} ({fetch.source}).")
     return cash, chatgpt_portfolio
 
 
@@ -961,7 +962,7 @@ def daily_results(chatgpt_portfolio: pd.DataFrame, cash: float) -> None:
             print(f"{str(r[0]):<{colw[0]}} {str(r[1]):>{colw[1]}} {str(r[2]):>{colw[2]}} {str(r[3]):>{colw[3]}}")
         print("\n[ Portfolio Snapshot ]")
         print(chatgpt_portfolio)
-        print(f"Cash balance: ${cash:,.2f}")
+        print(f"Cash balance: Rp{cash:,.0f}")
         return
 
     totals["Date"] = pd.to_datetime(totals["Date"], format="mixed", errors="coerce")  # tolerate ISO strings
@@ -1000,7 +1001,7 @@ def daily_results(chatgpt_portfolio: pd.DataFrame, cash: float) -> None:
         else:
             mdd_date_str = str(mdd_date)
         print(f"Maximum Drawdown: {max_drawdown:.2%} (on {mdd_date_str})")
-        return
+        # return
 
     # Risk-free config
     rf_annual = 0.045
@@ -1037,7 +1038,7 @@ def daily_results(chatgpt_portfolio: pd.DataFrame, cash: float) -> None:
     start_date = equity_series.index.min() - pd.Timedelta(days=1)
     end_date = equity_series.index.max() + pd.Timedelta(days=1)
 
-    spx_fetch = download_price_data("^GSPC", start=start_date, end=end_date, progress=False)
+    spx_fetch = download_price_data("^JKSE", start=start_date, end=end_date, progress=False)
     spx = spx_fetch.df
 
     beta = np.nan
@@ -1069,7 +1070,7 @@ def daily_results(chatgpt_portfolio: pd.DataFrame, cash: float) -> None:
 
     # $X normalized S&P 500 over same window (asks user for initial equity)
     spx_norm_fetch = download_price_data(
-        "^GSPC",
+        "^JKSE",
         start=equity_series.index.min(),
         end=equity_series.index.max() + pd.Timedelta(days=1),
         progress=False,
@@ -1116,10 +1117,10 @@ def daily_results(chatgpt_portfolio: pd.DataFrame, cash: float) -> None:
     print(f"{'Sortino Ratio (period):':32} {fmt_or_na(sortino_period, '{:.4f}'):>15}")
     print(f"{'Sortino Ratio (annualized):':32} {fmt_or_na(sortino_annual, '{:.4f}'):>15}")
 
-    print("\n[ CAPM vs Benchmarks ]")
+    print("\n[ CAPM vs IHSG (^JKSE) ]")
     if not np.isnan(beta):
-        print(f"{'Beta (daily) vs ^GSPC:':32} {beta:>15.4f}")
-        print(f"{'Alpha (annualized) vs ^GSPC:':32} {alpha_annual:>15.2%}")
+        print(f"{'Beta (daily) vs ^JKSE:':32} {beta:>15.4f}")
+        print(f"{'Alpha (annualized) vs ^JKSE:':32} {alpha_annual:>15.2%}")
         print(f"{'R² (fit quality):':32} {r2:>15.3f}   {'Obs:':>6} {n_obs}")
         if n_obs < 60 or (not np.isnan(r2) and r2 < 0.20):
             print("  Note: Short sample and/or low R² — alpha/beta may be unstable.")
@@ -1147,6 +1148,7 @@ def daily_results(chatgpt_portfolio: pd.DataFrame, cash: float) -> None:
         "\n"
         "*Paste everything above into ChatGPT*"
     )
+
 
 
 # ------------------------------

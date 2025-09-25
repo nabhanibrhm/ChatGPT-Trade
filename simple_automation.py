@@ -52,7 +52,7 @@ Total Equity: Rp{total_equity:,.2f}
 
 Rules:
 - You have Rp{cash:,.2f} in cash available for new positions
-- Prefer Indonesia stocks (<Rp5T market cap)
+- Prefer Indonesia stocks (<Rp300M market cap)
 - Full shares only, no options or derivatives
 - Use stop-losses for risk management
 - Be conservative with position sizing
@@ -80,7 +80,7 @@ Only recommend 2 trades you are confident about. If no trades are recommended, u
     return prompt
 
 
-def call_openai_api(prompt: str, api_key: str, model: str = "gpt-4o") -> str:
+def call_openai_api(prompt: str, api_key: str, model: str = "o3") -> str:
     """Call OpenAI API and return response"""
     if not HAS_OPENAI:
         raise ImportError("openai package not installed. Run: pip install openai")
@@ -165,7 +165,7 @@ def execute_automated_trades(trades: List[Dict[str, Any]], portfolio_df: pd.Data
     return portfolio_df, cash
 
 
-def run_automated_trading(api_key: str, model: str = "gpt-4o", data_dir: str = "Start Your Own", dry_run: bool = False):
+def run_automated_trading(api_key: str, model: str = "o3", data_dir: str = "Start Your Own", dry_run: bool = False):
     """Run the automated trading process"""
     
     print("=== Automated Trading System ===")
@@ -252,7 +252,7 @@ def main():
     """Main function"""
     parser = argparse.ArgumentParser(description="Simple Automated Trading")
     parser.add_argument("--api-key", help="OpenAI API key (or set OPENAI_API_KEY env var)")
-    parser.add_argument("--model", default="gpt-4", help="OpenAI model to use")
+    parser.add_argument("--model", default="o3", help="OpenAI model to use")
     parser.add_argument("--data-dir", default="Start Your Own", help="Data directory")
     parser.add_argument("--dry-run", action="store_true", help="Don't execute trades, just show recommendations")
     
